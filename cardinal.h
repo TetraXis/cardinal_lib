@@ -1,27 +1,308 @@
 #ifndef CARDINAL_NUMBER
-//#include <bitset>
-#include <vector>
+#include <bitset>
+//#include <vector>
 
 #define BIT_SIZE			128
 #define SIGN				0
-#define INTEGER_FIRST		1
-#define INTEGER_LAST		87
-#define FRACTIONAL_FIRST	88
-#define FRACTIONAL_LAST		128
+#define INTEGER_LEFT		1
+#define INTEGER_RIGHT		87
+#define INTEGER_SIZE		87
+#define FRACTIONAL_LEFT		88
+#define FRACTIONAL_RIGHT	127
+#define FRACTIONAL_SIZE		40
+#define SMALLEST_FRACTION	9.0949477017729282379150390625e-13
+#define FRACTION_1			2384185791015625
+#define FRACTION_2			38146975525337
+
+template <typename T>
+std::string as_binary(T value)
+{
+	const unsigned int size = sizeof(T) * 8;
+	unsigned long long new_value = *(unsigned long long*)(&value);
+	string result = "";
+	for (unsigned int i = 0; i < size; i++)
+	{
+		result += (new_value & 1) + '0';
+		new_value >>= 1;
+	}
+	for (unsigned int i = 0; i < size/2; i++)
+	{
+		std::swap(result[i], result[size - i - 1]);
+	}
+	return result;
+}
+
+/*
+9.0949477017729282379150390625
+90949477017729282379150390625 e-28
+
+90949477017729282379150390625
+
+38146975525337
+2384185791015625
+
+*/
 
 struct cardinal
 {
 	//std::bitset<BIT_SIZE> data;
-	std::vector<bool> data;
+private:
+	//std::vector<bool> data = vector<bool>(BIT_SIZE, false);
+	std::bitset<BIT_SIZE> data;
 
-	cardinal(const cardinal& value) noexcept
+public:
+	cardinal()
+	{}
+
+	cardinal(const cardinal& value)
 		: data(value.data)
 	{}
 
-	cardinal(const long long& value) noexcept
+	cardinal(long long value) noexcept
 	{
-
+		for (unsigned int i = INTEGER_RIGHT; value != 0 && i > INTEGER_RIGHT - 63; i--)
+		{
+			data[i] = value & 1;
+			value >>= 1;
+		}
+		if (value < 0)
+		{
+			invert();
+		}
 	}
+	
+	cardinal(unsigned long long value) noexcept
+	{
+		for (unsigned int i = INTEGER_RIGHT; value != 0 && i > INTEGER_RIGHT - 64; i--)
+		{
+			data[i] = value & 1;
+			value >>= 1;
+		}
+		data[INTEGER_RIGHT - 64] = value & 1;
+	}
+
+	cardinal(double value) noexcept
+	{
+		bool flip = value < 0;
+		if (flip)
+		{
+			value = -value;
+		}
+		long long integer = value;
+		value -= integer - 1;												/* that way we have fractional part in mantissa */
+		unsigned long long fractional = *(unsigned long long*)(&value);		/* convert double bits to long long */
+		fractional >>= 12;													/* match double preccision with cardinal preccision */
+		for (unsigned int i = INTEGER_RIGHT; integer != 0 && i > INTEGER_RIGHT - 63; i--)
+		{
+			data[i] = integer & 1;
+			integer >>= 1;
+		}
+		for (unsigned int i = FRACTIONAL_RIGHT; i >= FRACTIONAL_LEFT; i--)
+		{
+			data[i] = fractional & 1;
+			fractional >>= 1;
+		}
+		if (flip)
+		{
+			invert();
+		}
+	}
+
+	cardinal operator + (const cardinal& other) const
+	{
+		cardinal result;
+		bool remaining = false;
+		for (int i = BIT_SIZE - 1; i >= 0; i--)
+		{
+			result.data[i] = data[i] ^ other.data[i] ^ remaining;
+			remaining = data[i] & other.data[i] | data[i] & remaining | remaining & other.data[i];
+		}
+		return result;
+	}
+
+	/* Mb incorrect when overflowing */
+
+	cardinal operator ++ (int)
+	{
+		cardinal temp(*this);
+		int i;
+		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; data[i] && i >= 0; i--)
+		{
+			data[i] = false;
+		}
+		if (i > 0)
+		{
+			data[i] = true;
+		}
+		return temp;
+	}
+	
+	cardinal operator ++ ()
+	{
+		int i;
+		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; data[i] && i >= 0; i--)
+		{
+			data[i] = false;
+		}
+		if (i > 0)
+		{
+			data[i] = true;
+		}
+		return *this;
+	}
+
+	cardinal operator -- (int)
+	{
+		cardinal temp(*this);
+		int i;
+		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !data[i] && i >= 0; i--)
+		{
+			data[i] = true;
+		}
+		if (i > 0)
+		{
+			data[i] = false;
+		}
+		return temp;
+	}
+
+	cardinal operator -- ()
+	{
+		int i;
+		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !data[i] && i >= 0; i--)
+		{
+			data[i] = true;
+		}
+		if (i > 0)
+		{
+			data[i] = false;
+		}
+		return *this;
+	}
+
+	operator std::string() const noexcept
+	{
+		std::string result = (data[SIGN] ? "1 " : "0 ");
+		result += " ";
+		for (int i = INTEGER_LEFT; i <= INTEGER_RIGHT; i++)
+		{
+			result += data[i] + '0';
+		}
+		result += " ";
+		for (int i = FRACTIONAL_LEFT; i <= FRACTIONAL_RIGHT; i++)
+		{
+			result += data[i] + '0';
+		}
+		return result;
+	}
+
+	std::string to_binary(const bool& add_spaces = false) const noexcept
+	{
+		std::string result = (data[SIGN] ? "1" : "0");
+		if (add_spaces)
+		{
+			result += " ";
+		}
+		for (int i = INTEGER_LEFT; i <= INTEGER_RIGHT; i++)
+		{
+			result += data[i] + '0';
+		}
+		if (add_spaces)
+		{
+			result += " ";
+		}
+		for (int i = FRACTIONAL_LEFT; i <= FRACTIONAL_RIGHT; i++)
+		{
+			result += data[i] + '0';
+		}
+		return result;
+	}
+
+	void increment() noexcept /* add smallest amount */
+	{
+		int i;
+		for (i = BIT_SIZE - 1; data[i] && i >= 0; i--)
+		{
+			data[i] = false;
+		}
+		if (i > 0)
+		{
+			data[i] = true;
+		}
+	}
+	
+	void decrement() noexcept /* substruct smallest amount */
+	{
+		int i;
+		for (i = BIT_SIZE - 1; !data[i] && i >= 0; i--)
+		{
+			data[i] = true;
+		}
+		if (i > 0)
+		{
+			data[i] = false;
+		}
+	}
+
+	void invert() /* changes sign */
+	{
+		if (data[SIGN])
+		{
+			decrement();
+			data.flip();
+		}
+		else
+		{
+			data.flip();
+			increment();
+		}
+	}
+
+	bool get_bit(const unsigned int& position) const
+	{
+		return bool(data[position]);
+	}
+
+	void set_bit(const unsigned int& position, const bool& value = false)
+	{
+		data[position] = value;
+	}
+
+	inline void flip_bit(const unsigned int& position)
+	{
+		data[position] = !data[position];
+	}
+
+	void flip_all() noexcept
+	{
+		data.flip();
+	}
+
+	void flip_sign_bit() noexcept
+	{
+		data[SIGN].flip();
+	}
+
+	constexpr void flip_integer_bits() noexcept
+	{
+		for (unsigned int i = INTEGER_LEFT; i <= INTEGER_RIGHT; i++)
+		{
+			data[i] = !data[i];
+		}
+	}
+
+	constexpr void flip_fractional_bits() noexcept
+	{
+		for (unsigned int i = FRACTIONAL_LEFT; i <= FRACTIONAL_RIGHT; i++)
+		{
+			data[i] = !data[i];
+		}
+	}
+
+	/*std::bitset::reference& operator [] (const unsigned int& position)
+	{
+		return data[position];
+	}*/
 };
 
 //struct cardinal
