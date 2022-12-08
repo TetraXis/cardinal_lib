@@ -10,9 +10,6 @@
 #define FRACTIONAL_LEFT		88
 #define FRACTIONAL_RIGHT	127
 #define FRACTIONAL_SIZE		40
-#define SMALLEST_FRACTION	9.0949477017729282379150390625e-13
-#define FRACTION_1			2384185791015625
-#define FRACTION_2			38146975525337
 
 template <typename T>
 std::string as_binary(T value)
@@ -88,25 +85,24 @@ public:
 		{
 			value = -value;
 		}
-		long long integer = value;
-		value -= integer - 1;												/* that way we have fractional part in mantissa */
-		unsigned long long fractional = *(unsigned long long*)(&value);		/* convert double bits to long long */
-		fractional >>= 12;													/* match double preccision with cardinal preccision */
-		for (unsigned int i = INTEGER_RIGHT; integer != 0 && i > INTEGER_RIGHT - 63; i--)
+		unsigned long long bits = *(unsigned long long*)(&value);
+		int exponent = ((bits & (0b11111111111ull << 52)) >> 52) - 1023;
+		unsigned long long mantissa = (bits & ((1ull << 52) - 1)) + (1ull << 52);
+		for (int i = INTEGER_RIGHT + 52 - exponent; mantissa != 0 && i >= 0; i--)
 		{
-			data[i] = integer & 1;
-			integer >>= 1;
-		}
-		for (unsigned int i = FRACTIONAL_RIGHT; i >= FRACTIONAL_LEFT; i--)
-		{
-			data[i] = fractional & 1;
-			fractional >>= 1;
+			if (i < BIT_SIZE)
+			{
+				data[i] = mantissa & 1;
+			}
+			mantissa >>= 1;
 		}
 		if (flip)
 		{
 			invert();
 		}
 	}
+
+	//void operator <<= ()
 
 	cardinal operator + (const cardinal& other) const
 	{
