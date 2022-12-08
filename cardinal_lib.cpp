@@ -16,7 +16,7 @@ int main()
 {
 	cardinal a = 15.0, b = 25.0;
 	uint64_t ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-	for (int i = 0; i < 1000; i++)
+	for (int i = 0; i < 10000; i++)
 	{
 		a = a + b;
 	}

@@ -45,7 +45,48 @@ struct cardinal
 	//std::bitset<BIT_SIZE> data;
 private:
 	//std::vector<bool> data = vector<bool>(BIT_SIZE, false);
-	std::bitset<BIT_SIZE> data;
+	//std::bitset<BIT_SIZE> data;
+	struct
+	{
+		long long left = 0;
+		unsigned long long right = 0;
+
+		bool operator [](const unsigned int& position) const
+		{
+			if (position < 64)
+			{
+				return right & (1ull << position);
+			}
+			return left & (1ull << position);
+		}
+
+		void set_at(const unsigned int& position, const bool& value)
+		{
+			if (value)
+			{
+				if (position < 64)
+				{
+					left |= 1ull << position;
+					return;
+				}
+				right |= 1ull << position;
+				return;
+			}
+			if (position < 64)
+			{
+				left &= ~(1ull << position);
+				return;
+			}
+			right &= ~(1ull << position);
+			return;
+		}
+
+		void flip()
+		{
+			left = ~left;
+			right = ~right;
+		}
+	} data;
 
 public:
 	cardinal()
@@ -59,7 +100,8 @@ public:
 	{
 		for (unsigned int i = INTEGER_RIGHT; value != 0 && i > INTEGER_RIGHT - 63; i--)
 		{
-			data[i] = value & 1;
+			//data[i] = value & 1;
+			data.set_at(i, value & 1);
 			value >>= 1;
 		}
 		if (value < 0)
@@ -72,10 +114,12 @@ public:
 	{
 		for (unsigned int i = INTEGER_RIGHT; value != 0 && i > INTEGER_RIGHT - 64; i--)
 		{
-			data[i] = value & 1;
+			//data[i] = value & 1;
+			data.set_at(i, value & 1);
 			value >>= 1;
 		}
-		data[INTEGER_RIGHT - 64] = value & 1;
+		//data[INTEGER_RIGHT - 64] = value & 1;
+		data.set_at(INTEGER_RIGHT - 64, value & 1);
 	}
 
 	cardinal(double value) noexcept
@@ -92,7 +136,8 @@ public:
 		{
 			if (i < BIT_SIZE)
 			{
-				data[i] = mantissa & 1;
+				//data[i] = mantissa & 1;
+				data.set_at(i, mantissa & 1);
 			}
 			mantissa >>= 1;
 		}
@@ -110,7 +155,8 @@ public:
 		bool remaining = false;
 		for (int i = BIT_SIZE - 1; i >= 0; i--)
 		{
-			result.data[i] = data[i] ^ other.data[i] ^ remaining;
+			//result.data[i] = data[i] ^ other.data[i] ^ remaining;
+			result.data.set_at(i, data[i] ^ other.data[i] ^ remaining);
 			remaining = data[i] & other.data[i] | data[i] & remaining | remaining & other.data[i];
 		}
 		return result;
@@ -124,11 +170,13 @@ public:
 		int i;
 		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; data[i] && i >= 0; i--)
 		{
-			data[i] = false;
+			//data[i] = false;
+			data.set_at(i, false);
 		}
 		if (i > 0)
 		{
-			data[i] = true;
+			//data[i] = true;
+			data.set_at(i, true);
 		}
 		return temp;
 	}
@@ -138,11 +186,13 @@ public:
 		int i;
 		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; data[i] && i >= 0; i--)
 		{
-			data[i] = false;
+			//data[i] = false;
+			data.set_at(i, false);
 		}
 		if (i > 0)
 		{
-			data[i] = true;
+			//data[i] = true;
+			data.set_at(i, true);
 		}
 		return *this;
 	}
@@ -153,11 +203,13 @@ public:
 		int i;
 		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !data[i] && i >= 0; i--)
 		{
-			data[i] = true;
+			//data[i] = true;
+			data.set_at(i, true);
 		}
 		if (i > 0)
 		{
-			data[i] = false;
+			//data[i] = false;
+			data.set_at(i, false);
 		}
 		return temp;
 	}
@@ -167,11 +219,13 @@ public:
 		int i;
 		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !data[i] && i >= 0; i--)
 		{
-			data[i] = true;
+			//data[i] = true;
+			data.set_at(i, true);
 		}
 		if (i > 0)
 		{
-			data[i] = false;
+			//data[i] = false;
+			data.set_at(i, false);
 		}
 		return *this;
 	}
@@ -219,11 +273,13 @@ public:
 		int i;
 		for (i = BIT_SIZE - 1; data[i] && i >= 0; i--)
 		{
-			data[i] = false;
+			//data[i] = false;
+			data.set_at(i, false);
 		}
 		if (i > 0)
 		{
-			data[i] = true;
+			//data[i] = true;
+			data.set_at(i, true);
 		}
 	}
 	
@@ -232,11 +288,13 @@ public:
 		int i;
 		for (i = BIT_SIZE - 1; !data[i] && i >= 0; i--)
 		{
-			data[i] = true;
+			//data[i] = true;
+			data.set_at(i, true);
 		}
 		if (i > 0)
 		{
-			data[i] = false;
+			//data[i] = false;
+			data.set_at(i, false);
 		}
 	}
 
@@ -261,39 +319,41 @@ public:
 
 	void set_bit(const unsigned int& position, const bool& value = false)
 	{
-		data[position] = value;
+		//data[position] = value;
+		data.set_at(position, value);
 	}
 
-	inline void flip_bit(const unsigned int& position)
-	{
-		data[position] = !data[position];
-	}
+	//inline void flip_bit(const unsigned int& position)
+	//{
+	//	//data[position] = !data[position];
+	//	data.set_at(position, value);
+	//}
 
-	void flip_all() noexcept
-	{
-		data.flip();
-	}
+	//void flip_all() noexcept
+	//{
+	//	data.flip();
+	//}
 
-	void flip_sign_bit() noexcept
-	{
-		data[SIGN].flip();
-	}
+	//void flip_sign_bit() noexcept
+	//{
+	//	data[SIGN].flip();
+	//}
 
-	constexpr void flip_integer_bits() noexcept
-	{
-		for (unsigned int i = INTEGER_LEFT; i <= INTEGER_RIGHT; i++)
-		{
-			data[i] = !data[i];
-		}
-	}
+	//constexpr void flip_integer_bits() noexcept
+	//{
+	//	for (unsigned int i = INTEGER_LEFT; i <= INTEGER_RIGHT; i++)
+	//	{
+	//		data[i] = !data[i];
+	//	}
+	//}
 
-	constexpr void flip_fractional_bits() noexcept
-	{
-		for (unsigned int i = FRACTIONAL_LEFT; i <= FRACTIONAL_RIGHT; i++)
-		{
-			data[i] = !data[i];
-		}
-	}
+	//constexpr void flip_fractional_bits() noexcept
+	//{
+	//	for (unsigned int i = FRACTIONAL_LEFT; i <= FRACTIONAL_RIGHT; i++)
+	//	{
+	//		data[i] = !data[i];
+	//	}
+	//}
 
 	/*std::bitset::reference& operator [] (const unsigned int& position)
 	{
