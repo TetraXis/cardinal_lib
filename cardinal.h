@@ -10,6 +10,7 @@
 #define FRACTIONAL_LEFT		88
 #define FRACTIONAL_RIGHT	127
 #define FRACTIONAL_SIZE		40
+#define ULL_MAX_VALUE		18446744073709551615
 
 template <typename T>
 std::string as_binary(T value)
@@ -55,30 +56,29 @@ private:
 		{
 			if (position < 64)
 			{
-				return right & (1ull << position);
+				return left & (1ull << (63-position));
 			}
-			return left & (1ull << position);
+			return right & (1ull << (127-position));
 		}
 
 		void set_at(const unsigned int& position, const bool& value)
 		{
-			if (value)
-			{
-				if (position < 64)
-				{
-					left |= 1ull << position;
-					return;
-				}
-				right |= 1ull << position;
-				return;
-			}
 			if (position < 64)
 			{
-				left &= ~(1ull << position);
+				if (value)
+				{
+					left |= 1ull << (63 - position);
+					return;
+				}
+				left &= ~(1ull << (63 - position));
 				return;
 			}
-			right &= ~(1ull << position);
-			return;
+			if (value)
+			{
+				right |= 1ull << ((127 - position));
+				return;
+			}
+			right &= ~(1ull << ((127 - position)));
 		}
 
 		void flip()
@@ -151,15 +151,24 @@ public:
 
 	cardinal operator + (const cardinal& other) const
 	{
-		cardinal result;
-		bool remaining = false;
-		for (int i = BIT_SIZE - 1; i >= 0; i--)
+		cardinal result(*this);
+		if (ULL_MAX_VALUE - data.right < other.data.right)
 		{
-			//result.data[i] = data[i] ^ other.data[i] ^ remaining;
-			result.data.set_at(i, data[i] ^ other.data[i] ^ remaining);
-			remaining = data[i] & other.data[i] | data[i] & remaining | remaining & other.data[i];
+			result.data.left++;
 		}
+		result.data.right += other.data.right;
+		result.data.left += other.data.left;
 		return result;
+
+		//cardinal result;
+		//bool remaining = false;
+		//for (int i = BIT_SIZE - 1; i >= 0; i--)
+		//{
+		//	//result.data[i] = data[i] ^ other.data[i] ^ remaining;
+		//	result.data.set_at(i, data[i] ^ other.data[i] ^ remaining);
+		//	remaining = data[i] & other.data[i] | data[i] & remaining | remaining & other.data[i];
+		//}
+		//return result;
 	}
 
 	/* Mb incorrect when overflowing */
