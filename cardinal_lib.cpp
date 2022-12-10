@@ -6,9 +6,10 @@
 
 #include <iostream>
 #include <chrono>
+#include <Windows.h>
 
 #define AMOUNT_OF_TESTS 20
-#define TEST_DURATION 1000000
+#define TEST_DURATION 100000
 
 using namespace std;
 using namespace std::chrono;
@@ -17,8 +18,11 @@ using namespace std::chrono;
 
 int main()
 {
-	cardinal a = 1.0, b = 13.0;
-	double sum = 0;
+	cardinal a = 12, b = -1;
+	cout << (a).to_binary(true) << '\n';
+	cout << (b).to_binary(true) << '\n';
+	cout << (a - b).to_binary(true) << '\n';
+	/*double sum = 0;
 	for (int j = 0; j < AMOUNT_OF_TESTS; j++)
 	{
 		uint64_t ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
@@ -29,7 +33,7 @@ int main()
 		cout << j << ":\t" << duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() - ms << " ms" << endl;
 		sum += duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() - ms;
 	}
-	cout << "avg:\t" << sum / AMOUNT_OF_TESTS << " ms" << endl;
+	cout << "avg:\t" << sum / AMOUNT_OF_TESTS << " ms" << endl;*/
 	cout << "\n\nreturn\n";
 	return 0;
 }
