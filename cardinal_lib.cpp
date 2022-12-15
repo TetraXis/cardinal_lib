@@ -18,10 +18,11 @@ using namespace std::chrono;
 
 int main()
 {
-	cardinal a = 12, b = -1;
-	cout << (a).to_binary(true) << '\n';
-	cout << (b).to_binary(true) << '\n';
-	cout << (a - b).to_binary(true) << '\n';
+	cardinal a;
+	a = -5;
+	cout << a.to_binary(true) << endl;
+	a >>=1;
+	cout << a.to_binary(true) << endl;
 	/*double sum = 0;
 	for (int j = 0; j < AMOUNT_OF_TESTS; j++)
 	{

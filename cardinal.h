@@ -1,4 +1,5 @@
 #ifndef CARDINAL_NUMBER
+#include <string>
 
 /*
 
@@ -9,7 +10,7 @@
 		next 191 bits - integer part 
 		next 64 bits - fractional part
 		
-		bits represented using 4 long longs:
+		bits represented using 4 unsigned long longs:
 		left, middle, right, fractional
 
 */
@@ -200,7 +201,67 @@ struct cardinal
 		}
 	}
 
-	//void operator <<= ()
+	void operator <<= (const int& shift)
+	{
+		if (shift < 0)
+		{
+			*this >>= (-shift);
+			return;
+		}
+		for (int i = 0; i < BIT_SIZE; i++)
+		{
+			if (i + shift < BIT_SIZE)
+			{
+				bits.set_at(i, bits[i + shift]);
+			}
+			else
+			{
+				bits.set_at(i, false);
+			}
+		}
+		/*for (int i = BIT_SIZE - shift; i < BIT_SIZE; i++)
+		{
+			bits.set_at(i, false);
+		}*/
+	}
+
+	void operator >>= (const int& shift)
+	{
+		if (shift < 0)
+		{
+			*this <<= (-shift);
+			return;
+		}
+		for (int i = BIT_SIZE - 1; i >= 0; i--)
+		{
+			if (i - shift >= 0)
+			{
+				bits.set_at(i, bits[i - shift]);
+			}
+			else
+			{
+				bits.set_at(i, bits[SIGN]);
+			}
+		}
+		/*for (int i = BIT_SIZE - shift; i < BIT_SIZE; i++)
+		{
+			bits.set_at(i, false);
+		}*/
+	}
+
+	cardinal operator << (const int& shift) const
+	{
+		cardinal result(*this);
+		result <<= shift;
+		return result;
+	}
+
+	cardinal operator >> (const int& shift) const
+	{
+		cardinal result(*this);
+		result >>= shift;
+		return result;
+	}
 
 	cardinal operator - () const
 	{
@@ -215,10 +276,10 @@ struct cardinal
 		fractional_overflow = ULL_MAX_VALUE - result.bits.fractional < other.bits.fractional;
 		result.bits.fractional += other.bits.fractional;
 																									/* \/ \/ \/ говно, возможно не работает */
-		right_overflow = ULL_MAX_VALUE - result.bits.right - fractional_overflow < other.bits.right || ULL_MAX_VALUE - result.bits.right - fractional_overflow == ULL_MAX_VALUE;
+		right_overflow = ULL_MAX_VALUE - result.bits.right - fractional_overflow < other.bits.right || fractional_overflow && ULL_MAX_VALUE - result.bits.right - fractional_overflow == ULL_MAX_VALUE;
 		result.bits.right += other.bits.right + fractional_overflow;
 
-		middle_overflow = ULL_MAX_VALUE - result.bits.middle - right_overflow < other.bits.middle || ULL_MAX_VALUE - result.bits.middle - right_overflow == ULL_MAX_VALUE;
+		middle_overflow = ULL_MAX_VALUE - result.bits.middle - right_overflow < other.bits.middle || right_overflow && ULL_MAX_VALUE - result.bits.middle - right_overflow == ULL_MAX_VALUE;
 		result.bits.middle += other.bits.middle + right_overflow;
 
 		result.bits.left += other.bits.left + middle_overflow;
@@ -236,9 +297,30 @@ struct cardinal
 		//return result;
 	}
 
+	void operator += (const cardinal & other)
+	{
+		bool fractional_overflow, right_overflow, middle_overflow;
+
+		fractional_overflow = ULL_MAX_VALUE - bits.fractional < other.bits.fractional;
+		bits.fractional += other.bits.fractional;
+		/* \/ \/ \/ говно, возможно не работает */
+		right_overflow = ULL_MAX_VALUE - bits.right - fractional_overflow < other.bits.right || fractional_overflow && ULL_MAX_VALUE - bits.right - fractional_overflow == ULL_MAX_VALUE;
+		bits.right += other.bits.right + fractional_overflow;
+
+		middle_overflow = ULL_MAX_VALUE - bits.middle - right_overflow < other.bits.middle || right_overflow && ULL_MAX_VALUE - bits.middle - right_overflow == ULL_MAX_VALUE;
+		bits.middle += other.bits.middle + right_overflow;
+
+		bits.left += other.bits.left + middle_overflow;
+	}
+
 	cardinal operator - (const cardinal& other) const
 	{
 		return *this + other.inverted();
+	}
+
+	void operator -= (const cardinal& other)
+	{
+		*this += other.inverted();
 	}
 
 	/* Mb incorrect when overflowing */
@@ -307,6 +389,36 @@ struct cardinal
 			bits.set_at(i, false);
 		}
 		return *this;
+	}
+
+	explicit operator int() const noexcept
+	{
+		int result = int(bits.right);
+		if (bits[SIGN])
+		{
+			result |= 1 << 31;
+		}
+		return result;
+	}
+
+	explicit operator unsigned int() const noexcept
+	{
+		return unsigned int (bits.right);
+	}
+
+	explicit operator long long() const noexcept
+	{
+		long long result = bits.right;
+		if (bits[SIGN])
+		{
+			result |= 1ull << 63;
+		}
+		return result;
+	}
+
+	explicit operator unsigned long long() const noexcept
+	{
+		return bits.right;
 	}
 
 	operator std::string() const noexcept
