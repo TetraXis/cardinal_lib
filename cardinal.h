@@ -316,6 +316,33 @@ struct cardinal
 		//return result;
 	}
 
+	cardinal operator + (const unsigned long long& other) const
+	{
+		cardinal result(*this);
+
+		bool right_overflow, middle_overflow;
+		/* \/ \/ \/ говно, возможно не работает */
+		right_overflow = ULL_MAX_VALUE - bits.right < other;
+		result.bits.right += other;
+
+		middle_overflow = right_overflow && ULL_MAX_VALUE - bits.middle - right_overflow == ULL_MAX_VALUE;
+		result.bits.middle += right_overflow;
+
+		result.bits.left += middle_overflow;
+
+		return result;
+
+		//cardinal result;
+		//bool remaining = false;
+		//for (int i = BIT_SIZE - 1; i >= 0; i--)
+		//{
+		//	//result.bits[i] = bits[i] ^ other.bits[i] ^ remaining;
+		//	result.bits.set_at(i, bits[i] ^ other.bits[i] ^ remaining);
+		//	remaining = bits[i] & other.bits[i] | bits[i] & remaining | remaining & other.bits[i];
+		//}
+		//return result;
+	}
+
 	void operator += (const cardinal & other)
 	{
 		bool fractional_overflow, right_overflow, middle_overflow;
@@ -330,6 +357,19 @@ struct cardinal
 		bits.middle += other.bits.middle + right_overflow;
 
 		bits.left += other.bits.left + middle_overflow;
+	}
+
+	void operator += (const unsigned long long & other)
+	{
+		bool right_overflow, middle_overflow;
+		/* \/ \/ \/ говно, возможно не работает */
+		right_overflow = ULL_MAX_VALUE - bits.right < other;
+		bits.right += other;
+
+		middle_overflow = right_overflow && ULL_MAX_VALUE - bits.middle - right_overflow == ULL_MAX_VALUE;
+		bits.middle += right_overflow;
+
+		bits.left += middle_overflow;
 	}
 
 	cardinal operator - (const cardinal& other) const
