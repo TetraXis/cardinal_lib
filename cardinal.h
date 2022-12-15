@@ -201,6 +201,23 @@ struct cardinal
 		}
 	}
 
+	cardinal(const string& value)
+	{
+		if (value[0] == '0' && value[1] == 'b') /* binary literal */
+		{
+			for (int i = value.size() - 1, j = BIT_SIZE - 1; i > 1; --i)
+			{
+				if (value[i] != '0' && value[i] != '1')
+				{
+					continue;
+				}
+				bits.set_at(j, value[i] != '0');
+				j--;
+			}
+			return;
+		}
+	}
+
 	void operator <<= (const int& shift)
 	{
 		if (shift < 0)
@@ -248,6 +265,8 @@ struct cardinal
 			bits.set_at(i, false);
 		}*/
 	}
+
+	/* need to do them expicetly */
 
 	cardinal operator << (const int& shift) const
 	{
@@ -321,6 +340,98 @@ struct cardinal
 	void operator -= (const cardinal& other)
 	{
 		*this += other.inverted();
+	}
+
+	cardinal operator * (cardinal other) const
+	{
+		cardinal result;
+		int shift = -64;
+		while (other.bits.fractional != 0)
+		{
+			if (other.bits.fractional & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.fractional >>= 1;
+			++shift;
+		}
+		shift = 0;
+		while (other.bits.right != 0)
+		{
+			if (other.bits.right & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.right >>= 1;
+			++shift;
+		}
+		shift = 64;
+		while (other.bits.middle != 0)
+		{
+			if (other.bits.middle & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.middle >>= 1;
+			++shift;
+		}
+		shift = 128;
+		while (other.bits.left != 0)
+		{
+			if (other.bits.left & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.left >>= 1;
+			++shift;
+		}
+		return result;
+	}
+
+	void operator *= (cardinal other)
+	{
+		cardinal result;
+		int shift = -64;
+		while (other.bits.fractional != 0)
+		{
+			if (other.bits.fractional & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.fractional >>= 1;
+			++shift;
+		}
+		shift = 0;
+		while (other.bits.right != 0)
+		{
+			if (other.bits.right & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.right >>= 1;
+			++shift;
+		}
+		shift = 64;
+		while (other.bits.middle != 0)
+		{
+			if (other.bits.middle & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.middle >>= 1;
+			++shift;
+		}
+		shift = 128;
+		while (other.bits.left != 0)
+		{
+			if (other.bits.left & 1)
+			{
+				result += *this << shift;
+			}
+			other.bits.left >>= 1;
+			++shift;
+		}
+		*this = result;
 	}
 
 	/* Mb incorrect when overflowing */
