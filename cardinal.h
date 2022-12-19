@@ -1,4 +1,5 @@
 #ifndef CARDINAL_NUMBER
+
 #include <string>
 
 /*
@@ -135,15 +136,14 @@ struct cardinal
 		: bits(left, middle, right, fractional)
 	{}
 
-	cardinal(const long long& value) noexcept
+
+
+	cardinal(const bool& value)
 	{
-		if (value < 0)
+		if (value)
 		{
-			bits.right = -value;
-			invert();
-			return;
+			bits.right = 1;
 		}
-		bits.right = value;
 	}
 
 	cardinal(const int& value) noexcept
@@ -157,12 +157,23 @@ struct cardinal
 		bits.right = value;
 	}
 
-	cardinal(const unsigned long long& value) noexcept
+	cardinal(const unsigned int& value) noexcept
 	{
 		bits.right = value;
 	}
+	
+	cardinal(const long long& value) noexcept
+	{
+		if (value < 0)
+		{
+			bits.right = -value;
+			invert();
+			return;
+		}
+		bits.right = value;
+	}
 
-	cardinal(const unsigned int& value) noexcept
+	cardinal(const unsigned long long& value) noexcept
 	{
 		bits.right = value;
 	}
