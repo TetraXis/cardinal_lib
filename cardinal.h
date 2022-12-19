@@ -4,12 +4,12 @@
 /*
 
 		cardinal structure:
-		
+
 		256 bits
 		1 bit - sign
-		next 191 bits - integer part 
+		next 191 bits - integer part
 		next 64 bits - fractional part
-		
+
 		bits represented using 4 unsigned long longs:
 		left, middle, right, fractional
 
@@ -36,7 +36,7 @@ std::string as_binary(T value)
 		result += (new_value & 1) + '0';
 		new_value >>= 1;
 	}
-	for (unsigned int i = 0; i < size/2; i++)
+	for (unsigned int i = 0; i < size / 2; i++)
 	{
 		std::swap(result[i], result[size - i - 1]);
 	}
@@ -45,15 +45,23 @@ std::string as_binary(T value)
 
 struct cardinal
 {
-	struct
+	struct bit_structure
 	{
 		unsigned long long left = 0, middle = 0, right = 0, fractional = 0;
+
+		bit_structure()
+			: left(0), middle(0), right(0), fractional(0)
+		{}
+
+		bit_structure(const unsigned long long& left, const unsigned long long& middle, const unsigned long long& right, const unsigned long long& fractional)
+			: left(left), middle(middle), right(right), fractional(fractional)
+		{}
 
 		const bool operator [](const unsigned int& position) const noexcept
 		{
 			if (position < 64)
 			{
-				return left & (1ull << (63-position));
+				return left & (1ull << (63 - position));
 			}
 			if (position < 128)
 			{
@@ -123,6 +131,10 @@ struct cardinal
 		: bits(value.bits)
 	{}
 
+	cardinal(const unsigned long long& left, const unsigned long long& middle, const unsigned long long& right, const unsigned long long& fractional)
+		: bits(left, middle, right, fractional)
+	{}
+
 	cardinal(const long long& value) noexcept
 	{
 		if (value < 0)
@@ -144,7 +156,7 @@ struct cardinal
 		}
 		bits.right = value;
 	}
-	
+
 	cardinal(const unsigned long long& value) noexcept
 	{
 		bits.right = value;
@@ -168,7 +180,7 @@ struct cardinal
 			}
 			mantissa >>= 1;
 		}
-		if (double_bits & 1ull<<63)
+		if (double_bits & 1ull << 63)
 		{
 			invert();
 		}
@@ -191,74 +203,23 @@ struct cardinal
 		}
 	}
 
-	void operator <<= (const int& shift) noexcept
-	{
-		if (shift < 0)
-		{
-			*this >>= (-shift);
-			return;
-		}
-		for (int i = 0; i < BIT_SIZE; ++i)
-		{
-			if (i + shift < BIT_SIZE)
-			{
-				bits.set_at(i, bits[i + shift]);
-			}
-			else
-			{
-				bits.set_at(i, false);
-			}
-		}
-	}
 
-	void operator >>= (const int& shift) noexcept
-	{
-		if (shift < 0)
-		{
-			*this <<= (-shift);
-			return;
-		}
-		bool sign = bits[SIGN];
-		for (int i = BIT_SIZE - 1; i >= 0; --i)
-		{
-			if (i - shift >= 0)
-			{
-				bits.set_at(i, bits[i - shift]);
-			}
-			else
-			{
-				bits.set_at(i, sign);
-			}
-		}
-	}
 
-	const cardinal operator << (const int& shift) const noexcept
-	{
-		cardinal result(*this);
-		result <<= shift;
-		return result;
-	}
-
-	const cardinal operator >> (const int& shift) const noexcept
-	{
-		cardinal result(*this);
-		result >>= shift;
-		return result;
-	}
-
-	const cardinal operator - () const noexcept
+	cardinal	operator	-	() const noexcept
 	{
 		return inverted();
 	}
 
-	const cardinal operator + (const cardinal& other) const noexcept
+
+
+	cardinal	operator	+	(const cardinal& other) const noexcept
 	{
 		cardinal result(*this);
 		bool fractional_overflow, right_overflow, middle_overflow;
 
 		fractional_overflow = ULL_MAX_VALUE - result.bits.fractional < other.bits.fractional;
 		result.bits.fractional += other.bits.fractional;
-																									/* \/ \/ \/ говно, возможно не работает */
+		/* \/ \/ \/ говно, возможно не работает */
 		right_overflow = ULL_MAX_VALUE - result.bits.right - fractional_overflow < other.bits.right || fractional_overflow && ULL_MAX_VALUE - result.bits.right - fractional_overflow == ULL_MAX_VALUE;
 		result.bits.right += other.bits.right + fractional_overflow;
 
@@ -270,7 +231,7 @@ struct cardinal
 		return result;
 	}
 
-	const cardinal operator + (const unsigned long long& other) const noexcept
+	cardinal	operator	+	(const unsigned long long& other) const noexcept
 	{
 		cardinal result(*this);
 
@@ -287,7 +248,7 @@ struct cardinal
 		return result;
 	}
 
-	void operator += (const cardinal& other) noexcept
+	void		operator	+=	(const cardinal& other) noexcept
 	{
 		bool fractional_overflow, right_overflow, middle_overflow;
 
@@ -303,7 +264,7 @@ struct cardinal
 		bits.left += other.bits.left + middle_overflow;
 	}
 
-	void operator += (const unsigned long long & other) noexcept
+	void		operator	+=	(const unsigned long long& other) noexcept
 	{
 		bool right_overflow, middle_overflow;
 
@@ -316,17 +277,21 @@ struct cardinal
 		bits.left += middle_overflow;
 	}
 
-	const cardinal operator - (const cardinal& other) const noexcept
+
+
+	cardinal	operator	-	(const cardinal& other) const noexcept
 	{
 		return *this + other.inverted();
 	}
 
-	void operator -= (const cardinal& other) noexcept
+	void		operator	-=	(const cardinal& other) noexcept
 	{
 		*this += other.inverted();
 	}
 
-	const cardinal operator * (cardinal other) const noexcept
+
+
+	cardinal	operator	*	(cardinal other) const noexcept
 	{
 		cardinal result;
 		int shift = -64;
@@ -372,7 +337,7 @@ struct cardinal
 		return result;
 	}
 
-	void operator *= (cardinal other) noexcept
+	void		operator	*=	(cardinal other) noexcept
 	{
 		cardinal result;
 		int shift = -64;
@@ -418,7 +383,9 @@ struct cardinal
 		*this = result;
 	}
 
-	cardinal operator ++ (int) noexcept
+
+
+	cardinal	operator	++	(int) noexcept
 	{
 		cardinal temp(*this);
 		int i;
@@ -431,49 +398,253 @@ struct cardinal
 			bits.set_at(i, true);
 		}
 		return temp;
+	}
+
+	cardinal	operator	++	() noexcept
+	{
+		int i;
+		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; bits[i] && i >= 0; i--)
+		{
+			bits.set_at(i, false);
+		}
+		if (i > 0)
+		{
+			bits.set_at(i, true);
+		}
+		return *this;
+	}
+
+	cardinal	operator	--	(int) noexcept
+	{
+		cardinal temp(*this);
+		int i;
+		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !bits[i] && i >= 0; i--)
+		{
+			bits.set_at(i, true);
+		}
+		if (i > 0)
+		{
+			bits.set_at(i, false);
+		}
+		return temp;
+	}
+
+	cardinal	operator	--	() noexcept
+	{
+		int i;
+		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !bits[i] && i >= 0; i--)
+		{
+			bits.set_at(i, true);
+		}
+		if (i > 0)
+		{
+			bits.set_at(i, false);
+		}
+		return *this;
+	}
+
+
+
+	bool		operator	==	(const cardinal& other) const noexcept
+	{
+		return bits.right == other.bits.right && bits.fractional == other.bits.fractional && bits.middle == other.bits.middle && bits.left == other.bits.left;
+	}
+
+	bool		operator	!=	(const cardinal& other) const noexcept
+	{
+		return bits.right != other.bits.right || bits.fractional != other.bits.fractional || bits.middle != other.bits.middle || bits.left != other.bits.left;
+	}
+
+	bool		operator	>	(const cardinal& other) const noexcept
+	{
+		if (bits[SIGN] != other.bits[SIGN])
+		{
+			return other.bits[SIGN];
+		}
+		if (bits.left != other.bits.left)
+		{
+			return bits.left > other.bits.left;
+		}
+		if (bits.middle != other.bits.middle)
+		{
+			return bits.middle > other.bits.middle;
+		}
+		if (bits.right != other.bits.right)
+		{
+			return bits.right > other.bits.right;
+		}
+		return bits.fractional > other.bits.fractional;
+	}
+
+	bool		operator	>=	(const cardinal& other) const noexcept
+	{
+		if (bits[SIGN] != other.bits[SIGN])
+		{
+			return other.bits[SIGN];
+		}
+		if (bits.left != other.bits.left)
+		{
+			return bits.left > other.bits.left;
+		}
+		if (bits.middle != other.bits.middle)
+		{
+			return bits.middle > other.bits.middle;
+		}
+		if (bits.right != other.bits.right)
+		{
+			return bits.right > other.bits.right;
+		}
+		return bits.fractional >= other.bits.fractional;
+	}
+
+	bool		operator	<	(const cardinal& other) const noexcept
+	{
+		if (bits[SIGN] != other.bits[SIGN])
+		{
+			return bits[SIGN];
+		}
+		if (bits.left != other.bits.left)
+		{
+			return bits.left < other.bits.left;
+		}
+		if (bits.middle != other.bits.middle)
+		{
+			return bits.middle < other.bits.middle;
+		}
+		if (bits.right != other.bits.right)
+		{
+			return bits.right < other.bits.right;
+		}
+		return bits.fractional < other.bits.fractional;
+	}
+
+	bool		operator	<=	(const cardinal& other) const noexcept
+	{
+		if (bits[SIGN] != other.bits[SIGN])
+		{
+			return bits[SIGN];
+		}
+		if (bits.left != other.bits.left)
+		{
+			return bits.left < other.bits.left;
+		}
+		if (bits.middle != other.bits.middle)
+		{
+			return bits.middle < other.bits.middle;
+		}
+		if (bits.right != other.bits.right)
+		{
+			return bits.right < other.bits.right;
+		}
+		return bits.fractional <= other.bits.fractional;
+	}
+
+
+
+	cardinal	operator	~	() const
+	{
+		return { ~bits.left, ~bits.middle, ~bits.right, ~bits.fractional };
+	}
+
+	cardinal	operator	&	(const cardinal& other) const
+	{
+		return { bits.left & other.bits.left,bits.middle & other.bits.middle,bits.right & other.bits.right,bits.fractional & other.bits.fractional };
+	}
+
+	cardinal	operator	|	(const cardinal& other) const
+	{
+		return { bits.left | other.bits.left,bits.middle | other.bits.middle,bits.right | other.bits.right,bits.fractional | other.bits.fractional };
 	}
 	
-	cardinal operator ++ () noexcept
+	cardinal	operator	^	(const cardinal& other) const
 	{
-		int i;
-		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; bits[i] && i >= 0; i--)
-		{
-			bits.set_at(i, false);
-		}
-		if (i > 0)
-		{
-			bits.set_at(i, true);
-		}
-		return *this;
+		return { bits.left ^ other.bits.left,bits.middle ^ other.bits.middle,bits.right ^ other.bits.right,bits.fractional ^ other.bits.fractional };
+	}
+	
+	cardinal	operator	<<	(const int& shift) const noexcept
+	{
+		cardinal result(*this);
+		result <<= shift;
+		return result;
 	}
 
-	cardinal operator -- (int) noexcept
+	cardinal	operator	>>	(const int& shift) const noexcept
 	{
-		cardinal temp(*this);
-		int i;
-		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !bits[i] && i >= 0; i--)
-		{
-			bits.set_at(i, true);
-		}
-		if (i > 0)
-		{
-			bits.set_at(i, false);
-		}
-		return temp;
+		cardinal result(*this);
+		result >>= shift;
+		return result;
 	}
 
-	cardinal operator -- () noexcept
+	void		operator	&=	(const cardinal& other)
 	{
-		int i;
-		for (i = BIT_SIZE - FRACTIONAL_SIZE - 1; !bits[i] && i >= 0; i--)
+		bits.left &= other.bits.left;
+		bits.middle &= other.bits.middle;
+		bits.right &= other.bits.right;
+		bits.fractional &= other.bits.fractional;
+	}
+
+	void		operator	|=	(const cardinal& other)
+	{
+		bits.left |= other.bits.left;
+		bits.middle |= other.bits.middle;
+		bits.right |= other.bits.right;
+		bits.fractional |= other.bits.fractional;
+	}
+
+	void		operator	^=	(const cardinal& other)
+	{
+		bits.left ^= other.bits.left;
+		bits.middle ^= other.bits.middle;
+		bits.right ^= other.bits.right;
+		bits.fractional ^= other.bits.fractional;
+	}
+
+	void		operator	<<=	(const int& shift) noexcept
+	{
+		if (shift < 0)
 		{
-			bits.set_at(i, true);
+			*this >>= (-shift);
+			return;
 		}
-		if (i > 0)
+		for (int i = 0; i < BIT_SIZE; ++i)
 		{
-			bits.set_at(i, false);
+			if (i + shift < BIT_SIZE)
+			{
+				bits.set_at(i, bits[i + shift]);
+			}
+			else
+			{
+				bits.set_at(i, false);
+			}
 		}
-		return *this;
+	}
+
+	void		operator	>>=	(const int& shift) noexcept
+	{
+		if (shift < 0)
+		{
+			*this <<= (-shift);
+			return;
+		}
+		bool sign = bits[SIGN];
+		for (int i = BIT_SIZE - 1; i >= 0; --i)
+		{
+			if (i - shift >= 0)
+			{
+				bits.set_at(i, bits[i - shift]);
+			}
+			else
+			{
+				bits.set_at(i, sign);
+			}
+		}
+	}
+
+
+
+	operator bool() const noexcept
+	{
+		return bits.right != 0 || bits.fractional != 0 || bits.middle != 0 || bits.left != 0;
 	}
 
 	explicit operator int() const noexcept
@@ -528,6 +699,8 @@ struct cardinal
 		return result;
 	}
 
+
+
 	std::string to_binary(const bool& add_spaces = false) const noexcept
 	{
 		std::string result = (bits[SIGN] ? "1" : "0");
@@ -562,7 +735,7 @@ struct cardinal
 			bits.set_at(i, true);
 		}
 	}
-	
+
 	void decrement() noexcept /* substruct smallest amount */
 	{
 		int i;
@@ -596,6 +769,8 @@ struct cardinal
 		result.invert();
 		return result;
 	}
+
+
 
 	const bool get_bit(const unsigned int& position) const
 	{
