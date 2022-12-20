@@ -201,7 +201,7 @@ struct cardinal
 	{
 		if (value[0] == '0' && value[1] == 'b') /* binary literal */
 		{
-			for (int i = value.size() - 1, j = BIT_SIZE - 1; i > 1; --i)
+			for (unsigned long long i = value.size() - 1, j = BIT_SIZE - 1; i > 1; --i)
 			{
 				if (value[i] != '0' && value[i] != '1')
 				{
@@ -692,6 +692,42 @@ struct cardinal
 			return inverted().bits.right;
 		}
 		return bits.right;
+	}
+
+	operator double() const
+	{
+		unsigned long long double_bits = 0;
+		long long exponent = -1, first_one = -1;
+		for (int i = 0; i < BIT_SIZE; i++)
+		{
+			if (bits[i])
+			{
+				first_one = i;
+				exponent = 958ll + BIT_SIZE - i ; // exonent - 1 - 64(fractional size) + 1023(exponent shift)
+				break;
+			}
+		}
+		if (first_one == -1)
+		{
+			return 0.0;
+		}
+		++first_one; // skip unnecessery one;
+		for (int i = first_one, j = 0; i < BIT_SIZE && j < 52; i++, j++)
+		{
+			double_bits <<= 1;
+			double_bits += bits[i];
+		}
+		if (BIT_SIZE - first_one - 52 - 64 > 0)
+		{
+			double_bits <<= BIT_SIZE - first_one - 52;
+			cout << BIT_SIZE - first_one - 52 - 64 << endl;
+		}
+		double_bits |= exponent << 52; // mantissa size in double
+		if (bits[SIGN])
+		{
+			double_bits |= 1ull << 63;
+		}
+		return *(double*)&double_bits;
 	}
 
 	operator std::string() const noexcept

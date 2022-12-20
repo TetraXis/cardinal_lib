@@ -20,6 +20,11 @@ using namespace std::chrono;
 
 int main()
 {
+	cardinal a = 1.546521;
+	cout.precision(16);
+	cout << a.to_binary(true) << endl;
+	cout << double(a) << endl;
+
 	/*cardinal a("0b0"
 		"111111111111111111111111111111111111111111111111111111111111111"
 		"1111111111111111111111111111111111111111111111111111111111111111"
